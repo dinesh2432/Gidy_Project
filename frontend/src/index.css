@@ -1,0 +1,477 @@
+/* ═══════════════════════════════════════════════════════════
+   SecureLog — Global Design System
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts are loaded in index.html ── */
+
+/* ── CSS Variables ─────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --color-bg-base: #0d1117;
+  --color-bg-elevated: #161b22;
+  --color-bg-card: #1c2128;
+  --color-bg-hover: #21262d;
+  --color-border: #30363d;
+  --color-border-subtle: #21262d;
+
+  /* Text */
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #6e7681;
+
+  /* Accent */
+  --color-accent: #2f81f7;
+  --color-accent-hover: #388bfd;
+  --color-accent-subtle: rgba(47, 129, 247, 0.15);
+
+  /* Severity */
+  --critical-color: #b91c1c;
+  --critical-bg: rgba(185, 28, 28, 0.15);
+  --high-color: #ef4444;
+  --high-bg: rgba(239, 68, 68, 0.15);
+  --medium-color: #f97316;
+  --medium-bg: rgba(249, 115, 22, 0.15);
+  --low-color: #22c55e;
+  --low-bg: rgba(34, 197, 94, 0.15);
+
+  /* Status */
+  --resolved-color: #22c55e;
+  --resolved-bg: rgba(34, 197, 94, 0.12);
+  --unresolved-color: #ef4444;
+  --unresolved-bg: rgba(239, 68, 68, 0.12);
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Ant Design Theme Overrides ───────────────────────────── */
+
+/* Layout */
+.ant-layout {
+  background: var(--color-bg-base) !important;
+}
+
+.ant-layout-sider {
+  background: var(--color-bg-elevated) !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.ant-layout-header {
+  background: var(--color-bg-elevated) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  padding: 0 24px !important;
+  height: var(--header-height) !important;
+  line-height: var(--header-height) !important;
+}
+
+.ant-layout-content {
+  background: var(--color-bg-base) !important;
+}
+
+/* Cards */
+.ant-card {
+  background: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--border-radius-lg) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-card-head {
+  background: transparent !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-card-head-title {
+  color: var(--color-text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* Table */
+.ant-table {
+  background: var(--color-bg-card) !important;
+  color: var(--color-text-primary) !important;
+  font-size: 13px !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-secondary) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  white-space: nowrap !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--color-border-subtle) !important;
+  color: var(--color-text-primary) !important;
+  vertical-align: middle !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-hover) !important;
+  cursor: pointer;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--color-accent-subtle) !important;
+}
+
+.ant-table-placeholder {
+  background: var(--color-bg-card) !important;
+}
+
+/* Pagination */
+.ant-pagination .ant-pagination-item {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+}
+
+.ant-pagination .ant-pagination-item a {
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-pagination .ant-pagination-item-active {
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+}
+
+.ant-pagination .ant-pagination-item-active a {
+  color: #fff !important;
+}
+
+.ant-pagination .ant-pagination-prev button,
+.ant-pagination .ant-pagination-next button {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-select-selector {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-select-arrow {
+  color: var(--color-text-muted) !important;
+}
+
+/* Inputs */
+.ant-input,
+.ant-input-affix-wrapper {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+.ant-input::placeholder,
+.ant-input-affix-wrapper input::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+}
+
+/* Modals */
+.ant-modal-content {
+  background: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--border-radius-lg) !important;
+}
+
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-modal-title {
+  color: var(--color-text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.ant-modal-close {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Drawer */
+.ant-drawer-content {
+  background: var(--color-bg-card) !important;
+}
+
+.ant-drawer-header {
+  background: var(--color-bg-elevated) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-drawer-title {
+  color: var(--color-text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.ant-drawer-close {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Dropdown */
+.ant-select-dropdown {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+.ant-select-item {
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-select-item-option-active,
+.ant-select-item-option-selected {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Date Picker */
+.ant-picker {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+.ant-picker-input > input {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-picker-suffix {
+  color: var(--color-text-muted) !important;
+}
+
+/* Buttons */
+.ant-btn-primary {
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  font-weight: 500 !important;
+}
+
+.ant-btn-primary:hover {
+  background: var(--color-accent-hover) !important;
+  border-color: var(--color-accent-hover) !important;
+}
+
+.ant-btn-default {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-btn-default:hover {
+  background: var(--color-bg-hover) !important;
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent) !important;
+}
+
+/* Statistic */
+.ant-statistic-title {
+  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.ant-statistic-content {
+  color: var(--color-text-primary) !important;
+}
+
+/* Menu (Sidebar) */
+.ant-menu {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.ant-menu-item {
+  color: var(--color-text-secondary) !important;
+  border-radius: var(--border-radius) !important;
+  margin: 2px 8px !important;
+  width: calc(100% - 16px) !important;
+}
+
+.ant-menu-item:hover,
+.ant-menu-item-active {
+  color: var(--color-text-primary) !important;
+  background: var(--color-bg-hover) !important;
+}
+
+.ant-menu-item-selected {
+  background: var(--color-accent-subtle) !important;
+  color: var(--color-accent) !important;
+}
+
+/* Divider */
+.ant-divider {
+  border-color: var(--color-border) !important;
+}
+
+/* Tooltip */
+.ant-tooltip-inner {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: var(--border-radius) !important;
+}
+
+/* Tag */
+.ant-tag {
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  padding: 1px 8px !important;
+  border: none !important;
+}
+
+/* Form */
+.ant-form-item-label > label {
+  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Upload Dragger */
+.ant-upload-drag {
+  background: var(--color-bg-elevated) !important;
+  border: 2px dashed var(--color-border) !important;
+  border-radius: var(--border-radius-lg) !important;
+}
+
+.ant-upload-drag:hover {
+  border-color: var(--color-accent) !important;
+}
+
+.ant-upload-drag-icon {
+  color: var(--color-accent) !important;
+}
+
+.ant-upload-text {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-upload-hint {
+  color: var(--color-text-muted) !important;
+}
+
+/* Alert */
+.ant-alert {
+  border-radius: var(--border-radius) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ── Utility Classes ──────────────────────────────────────── */
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-card {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: default;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.table-row-clickable {
+  cursor: pointer;
+}
+
+.filter-section {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+}
+
+/* Spin override */
+.ant-spin-dot-item {
+  background-color: var(--color-accent) !important;
+}

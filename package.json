@@ -1,0 +1,16 @@
+{
+  "name": "security-audit-log-dashboard",
+  "version": "1.0.0",
+  "description": "Security Audit Log Dashboard — Enterprise-grade log investigation and analysis",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start"
+  },
+  "keywords": ["security", "audit", "logs", "dashboard", "mern"],
+  "author": "",
+  "license": "MIT"
+}
