@@ -1,11 +1,47 @@
 import { useState } from 'react';
-import { Modal, Upload, Button, Alert, Progress, Space, Typography, Divider, Tabs, Input } from 'antd';
-import { InboxOutlined, UploadOutlined, CheckCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import {
+  Modal, Upload, Button, Alert, Progress, Space, Typography,
+  Divider, Tabs, Input,
+} from 'antd';
+import {
+  InboxOutlined, UploadOutlined, CheckCircleOutlined, WarningOutlined,
+} from '@ant-design/icons';
 import { uploadLogs } from '../services/logService.js';
 
 const { Dragger } = Upload;
 const { Text, Title } = Typography;
 const { TextArea } = Input;
+
+/**
+ * Normalizes parsed JSON into a flat log array.
+ *
+ * Handles three possible shapes:
+ *   1. Plain array:                    [{...}, {...}]        ← ideal
+ *   2. API response wrapper:           { data: [{...}] }     ← exported from network tab
+ *   3. Success response wrapper:       { success, data: [] } ← copied from API response
+ *
+ * Strips MongoDB internal fields (_id, __v, uploadBatch, createdAt, updatedAt)
+ * so re-uploading exported files never causes duplicate key errors.
+ */
+const normalizeRecords = (parsed) => {
+  let records = parsed;
+
+  // Handle wrapped API response: { data: [...] } or { success: true, data: [...] }
+  if (!Array.isArray(parsed) && parsed !== null && typeof parsed === 'object') {
+    if (Array.isArray(parsed.data)) {
+      records = parsed.data;
+    } else if (Array.isArray(parsed.logs)) {
+      records = parsed.logs;
+    }
+  }
+
+  if (!Array.isArray(records)) {
+    return null; // Cannot extract an array — caller must show error
+  }
+
+  // Strip internal MongoDB fields that would cause re-upload duplicate key errors
+  return records.map(({ _id, __v, uploadBatch, createdAt, updatedAt, ...rest }) => rest);
+};
 
 /**
  * Upload modal supporting JSON file drag-and-drop and raw JSON paste.
@@ -35,17 +71,27 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
     }
   };
 
-  const processRecords = async (records) => {
-    if (!Array.isArray(records)) {
-      setError('Invalid format: the JSON must be an array of log records (e.g. [{...}, {...}])');
+  const processRecords = async (rawParsed) => {
+    const records = normalizeRecords(rawParsed);
+
+    if (records === null) {
+      setError(
+        'Invalid format: the JSON must be an array of log records.\n' +
+        'Expected: [{...}, {...}] or {"data": [{...}, {...}]}\n' +
+        'Received: ' + (typeof rawParsed)
+      );
       return;
     }
+
     if (records.length === 0) {
       setError('The array is empty. Please provide at least one log record.');
       return;
     }
+
     if (records.length > 10000) {
-      setError(`Too many records: ${records.length}. Maximum allowed is 10,000 per upload.`);
+      setError(
+        `Too many records: ${records.length.toLocaleString()}. Maximum allowed is 10,000 per upload.`
+      );
       return;
     }
 
@@ -65,33 +111,56 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
   };
 
   // Handle file upload via Dragger
-  const handleFileUpload = async (file) => {
-    const isJson = file.type === 'application/json' || file.name.endsWith('.json');
+  // Note: AntD v5 beforeUpload receives an UploadFile wrapper.
+  // Use originFileObj to get the native File for FileReader.
+  const handleFileUpload = (file) => {
+    const nativeFile = file.originFileObj || file;
+    const fileName = nativeFile.name || file.name || '';
+    const fileType = nativeFile.type || file.type || '';
+
+    const isJson = fileType === 'application/json' || fileName.endsWith('.json');
     if (!isJson) {
-      setError('Only JSON files are supported. Please upload a .json file.');
+      setError('Only .json files are supported. Please select a valid JSON file.');
       return false;
     }
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+
+    reader.onload = (e) => {
       try {
-        const parsed = JSON.parse(e.target.result);
-        await processRecords(parsed);
-      } catch {
-        setError('Failed to parse JSON file. Please ensure it is valid JSON.');
+        const text = e.target.result;
+        if (!text || text.trim() === '') {
+          setError('The file appears to be empty. Please check and try again.');
+          return;
+        }
+        const parsed = JSON.parse(text);
+        processRecords(parsed);
+      } catch (parseErr) {
+        setError(
+          'Failed to parse JSON file. Please ensure the file contains valid JSON.\n' +
+          `Parser error: ${parseErr.message}`
+        );
       }
     };
-    reader.readAsText(file);
-    return false; // Prevent default upload behaviour
+
+    reader.onerror = () => {
+      setError('Failed to read the file. Please try again.');
+    };
+
+    reader.readAsText(nativeFile);
+    return false; // Prevent AntD's default upload behaviour
   };
 
   // Handle raw JSON paste
-  const handlePasteUpload = async () => {
+  const handlePasteUpload = () => {
     try {
       const parsed = JSON.parse(jsonText);
-      await processRecords(parsed);
-    } catch {
-      setError('Invalid JSON. Please check the syntax and try again.');
+      processRecords(parsed);
+    } catch (parseErr) {
+      setError(
+        'Invalid JSON syntax. Please check the content and try again.\n' +
+        `Parser error: ${parseErr.message}`
+      );
     }
   };
 
@@ -101,7 +170,7 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
       label: 'Upload File',
       children: (
         <Dragger
-          accept=".json"
+          accept=".json,application/json"
           showUploadList={false}
           beforeUpload={handleFileUpload}
           disabled={uploading}
@@ -110,10 +179,11 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
           <p className="ant-upload-drag-icon">
             <InboxOutlined style={{ fontSize: 40, color: '#2f81f7' }} />
           </p>
-          <p className="ant-upload-text">Drag & drop a JSON file here</p>
+          <p className="ant-upload-text">Drag &amp; drop a JSON file here, or click to browse</p>
           <p className="ant-upload-hint">
-            Supports JSON arrays of up to 10,000 audit log records.
-            Click to browse.
+            Accepts: plain arrays <code>[{'{...}'}]</code> or API response wrappers{' '}
+            <code>{'{data: [{...}]}'}</code>. Max 10,000 records. Internal fields (
+            <code>_id</code>, <code>uploadBatch</code>) are automatically stripped.
           </p>
         </Dragger>
       ),
@@ -125,7 +195,14 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <TextArea
             id="json-paste-input"
-            placeholder={'[\n  {\n    "actor": "priya.nair@company.com",\n    "role": "admin",\n    ...\n  }\n]'}
+            placeholder={
+              '[\n  {\n    "actor": "priya.nair@company.com",\n' +
+              '    "role": "admin",\n    "action": "DELETE_USER",\n' +
+              '    "resource": "/api/users/334",\n    "resourceType": "USER",\n' +
+              '    "ipAddress": "192.168.1.45",\n    "region": "ap-south-1",\n' +
+              '    "severity": "HIGH",\n    "status": "Unresolved",\n' +
+              '    "timestamp": "2025-06-14T08:32:11Z"\n  }\n]'
+            }
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
             rows={10}
@@ -165,7 +242,7 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
       open={open}
       onCancel={handleClose}
       footer={null}
-      width={600}
+      width={620}
       destroyOnHidden
       mask={{ closable: !uploading }}
     >
@@ -192,7 +269,11 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
           type="error"
           icon={<WarningOutlined />}
           title="Upload Error"
-          description={error}
+          description={
+            <pre style={{ margin: 0, fontSize: 12, whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)' }}>
+              {error}
+            </pre>
+          }
           showIcon
           closable
           onClose={() => setError(null)}
@@ -203,12 +284,7 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
       {result && (
         <div>
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              marginBottom: 16,
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}
           >
             <CheckCircleOutlined style={{ color: '#22c55e', fontSize: 22 }} />
             <Title level={5} style={{ margin: 0, color: '#e6edf3' }}>
@@ -225,10 +301,10 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
             }}
           >
             {[
-              { label: 'Total Received', value: result.totalReceived, color: '#e6edf3' },
-              { label: 'Inserted', value: result.inserted, color: '#22c55e' },
-              { label: 'Duplicates', value: result.duplicates, color: '#f97316' },
-              { label: 'Failed', value: result.failed, color: '#ef4444' },
+              { label: 'Total Received', value: (result.totalReceived || 0).toLocaleString(), color: '#e6edf3' },
+              { label: 'Inserted', value: (result.inserted || 0).toLocaleString(), color: '#22c55e' },
+              { label: 'Duplicates Skipped', value: (result.duplicates || 0).toLocaleString(), color: '#f97316' },
+              { label: 'Failed Validation', value: (result.failed || 0).toLocaleString(), color: result.failed > 0 ? '#ef4444' : '#6e7681' },
               { label: 'Processing Time', value: result.processingTime, color: '#2f81f7' },
             ].map(({ label, value, color }) => (
               <div
@@ -242,7 +318,9 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
                 }}
               >
                 <Text style={{ color: '#8b949e', fontSize: 13 }}>{label}</Text>
-                <Text style={{ color, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                <Text
+                  style={{ color, fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 13 }}
+                >
                   {value}
                 </Text>
               </div>

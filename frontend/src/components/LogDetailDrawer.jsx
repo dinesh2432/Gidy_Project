@@ -157,7 +157,11 @@ const LogDetailDrawer = ({ log, open, onClose }) => {
           lineHeight: 1.6,
         }}
       >
-        {JSON.stringify(log, null, 2)}
+        {(() => {
+          // Strip internal DB fields before displaying to the user
+          const { uploadBatch, createdAt, updatedAt, __v, ...displayLog } = log;
+          return JSON.stringify(displayLog, null, 2);
+        })()}
       </pre>
     </Drawer>
   );

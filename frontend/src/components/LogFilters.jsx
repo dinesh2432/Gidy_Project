@@ -190,6 +190,7 @@ const LogFilters = ({ filters, onFilterChange, onReset, loading }) => {
             placeholder={['Start Date', 'End Date']}
             showTime={false}
             format="DD MMM YYYY"
+            allowEmpty={[true, true]}
           />
         </Col>
       </Row>

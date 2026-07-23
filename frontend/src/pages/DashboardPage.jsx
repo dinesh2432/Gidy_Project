@@ -62,14 +62,16 @@ const DashboardPage = () => {
       message.warning('No logs on this page to export');
       return;
     }
-    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+    // Strip internal MongoDB fields so the exported file can be safely re-uploaded
+    const exportData = logs.map(({ _id, __v, uploadBatch, createdAt, updatedAt, ...rest }) => rest);
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `audit_logs_page${pagination.currentPage}_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    message.success(`Exported ${logs.length} records`);
+    message.success(`Exported ${logs.length} records (internal fields stripped)`);
   };
 
   const handleRefreshAll = () => {
@@ -148,7 +150,7 @@ const DashboardPage = () => {
       {logsError && (
         <Alert
           type="error"
-          message="Failed to load audit logs"
+          title="Failed to load audit logs"
           description={logsError}
           showIcon
           action={

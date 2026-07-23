@@ -138,8 +138,9 @@ export const fetchLogById = async (logId) => {
  * @returns {object} Statistics object
  */
 export const fetchLogStats = async () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use UTC midnight so counts are consistent regardless of where the server runs
+  const todayUTC = new Date();
+  todayUTC.setUTCHours(0, 0, 0, 0);
 
   const [severityStats, statusStats, todayCount, total] = await Promise.all([
     // Count by severity
@@ -152,8 +153,8 @@ export const fetchLogStats = async () => {
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]),
 
-    // Today's uploads
-    Log.countDocuments({ timestamp: { $gte: today } }),
+    // Today's uploads (UTC)
+    Log.countDocuments({ timestamp: { $gte: todayUTC } }),
 
     // Total log count
     Log.estimatedDocumentCount(),

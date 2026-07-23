@@ -13,6 +13,7 @@ import {
 const { Sider, Header, Content } = Layout;
 const { Text } = Typography;
 
+// All nav items are now fully enabled — corresponding routes exist in App.jsx
 const NAV_ITEMS = [
   {
     key: '/dashboard',
@@ -23,13 +24,11 @@ const NAV_ITEMS = [
     key: '/audit-logs',
     icon: <SecurityScanOutlined />,
     label: 'Audit Logs',
-    disabled: true,
   },
   {
     key: '/settings',
     icon: <SettingOutlined />,
     label: 'Settings',
-    disabled: true,
   },
 ];
 
@@ -41,6 +40,11 @@ const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Determine which key is selected — handle nested paths gracefully
+  const selectedKey = NAV_ITEMS.find((item) =>
+    location.pathname.startsWith(item.key)
+  )?.key || '/dashboard';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -90,7 +94,15 @@ const MainLayout = () => {
           </div>
           {!collapsed && (
             <div>
-              <Text style={{ color: '#e6edf3', fontWeight: 700, fontSize: 14, lineHeight: 1.2, display: 'block' }}>
+              <Text
+                style={{
+                  color: '#e6edf3',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  lineHeight: 1.2,
+                  display: 'block',
+                }}
+              >
                 SecureLog
               </Text>
               <Text style={{ color: '#6e7681', fontSize: 10, letterSpacing: '0.05em' }}>
@@ -100,19 +112,20 @@ const MainLayout = () => {
           )}
         </div>
 
-        {/* Nav */}
+        {/* Navigation menu */}
         <Menu
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[selectedKey]}
           items={NAV_ITEMS.map((item) => ({
-            ...item,
+            key: item.key,
+            icon: item.icon,
             label: item.label,
-            onClick: !item.disabled ? () => navigate(item.key) : undefined,
+            onClick: () => navigate(item.key),
           }))}
           style={{ marginTop: 8, border: 'none' }}
         />
 
-        {/* Version tag */}
+        {/* Version tag — positioned so it doesn't overlap AntD collapse trigger */}
         {!collapsed && (
           <div
             style={{
@@ -122,6 +135,7 @@ const MainLayout = () => {
               right: 0,
               padding: '8px 16px',
               textAlign: 'center',
+              pointerEvents: 'none',
             }}
           >
             <Text style={{ color: '#6e7681', fontSize: 10 }}>v1.0.0 · Production</Text>
@@ -129,7 +143,12 @@ const MainLayout = () => {
         )}
       </Sider>
 
-      <Layout style={{ marginLeft: collapsed ? 64 : 220, transition: 'margin-left 0.2s ease' }}>
+      <Layout
+        style={{
+          marginLeft: collapsed ? 64 : 220,
+          transition: 'margin-left 0.2s ease',
+        }}
+      >
         {/* ── Header ──────────────────────────────────────────── */}
         <Header
           style={{
@@ -168,11 +187,7 @@ const MainLayout = () => {
           </Space>
 
           <Space size={16}>
-            <Badge
-              dot
-              color="#22c55e"
-              title="All systems operational"
-            >
+            <Badge dot color="#22c55e">
               <Text style={{ color: '#6e7681', fontSize: 12 }}>
                 System Status: Operational
               </Text>

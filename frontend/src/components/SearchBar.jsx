@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 
@@ -7,6 +7,7 @@ const { Search } = Input;
 /**
  * Debounced global search bar.
  * Fires onSearch only after the user stops typing for `delay` ms.
+ * Clears the timer on unmount to prevent memory leaks.
  *
  * @param {function} onSearch - Called with the search string
  * @param {boolean} loading - Disables input while fetching
@@ -15,10 +16,17 @@ const { Search } = Input;
 const SearchBar = ({ onSearch, loading = false, delay = 400 }) => {
   const timerRef = useRef(null);
 
+  // Clear timer on unmount to prevent calling onSearch on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const handleChange = useCallback(
     (e) => {
       const value = e.target.value;
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         onSearch(value.trim());
       }, delay);
@@ -28,7 +36,7 @@ const SearchBar = ({ onSearch, loading = false, delay = 400 }) => {
 
   const handleSearch = useCallback(
     (value) => {
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
       onSearch(value.trim());
     },
     [onSearch]
@@ -37,7 +45,7 @@ const SearchBar = ({ onSearch, loading = false, delay = 400 }) => {
   return (
     <Search
       id="global-log-search"
-      placeholder="Search by actor, action, resource, IP address, region…"
+      placeholder="Search by actor, action, resource, IP address, region, status…"
       prefix={<SearchOutlined style={{ color: '#6e7681' }} />}
       onChange={handleChange}
       onSearch={handleSearch}
@@ -45,9 +53,7 @@ const SearchBar = ({ onSearch, loading = false, delay = 400 }) => {
       allowClear
       size="large"
       style={{ width: '100%' }}
-      enterButton={
-        <span style={{ fontWeight: 500 }}>Search</span>
-      }
+      enterButton={<span style={{ fontWeight: 500 }}>Search</span>}
     />
   );
 };

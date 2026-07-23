@@ -3,7 +3,7 @@ import { Table, Tooltip, Typography, Space, Tag, Empty, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import SeverityTag from './SeverityTag.jsx';
 import StatusBadge from './StatusBadge.jsx';
-import { formatTimestamp, truncate } from '../utils/formatters.js';
+import { formatTimestamp } from '../utils/formatters.js';
 import { PAGE_SIZE_OPTIONS } from '../constants/index.js';
 
 const { Text } = Typography;
@@ -34,12 +34,23 @@ const LogTable = ({
 }) => {
   const [selectedRowKey, setSelectedRowKey] = useState(null);
 
-  const handleTableChange = (paginationInfo, _filters, sorter) => {
-    if (sorter?.field && sorter?.order) {
+  /**
+   * AntD Table onChange fires for pagination, filter, AND sort changes.
+   * We must separate them: sort changes should NOT also fire onPageChange,
+   * because sort updates filters → triggers useEffect → fetches page 1.
+   * Firing onPageChange on sort would cause a double-fetch.
+   */
+  const handleTableChange = (paginationInfo, _tableFilters, sorter) => {
+    const isSortChange = Boolean(sorter?.field && sorter?.order);
+
+    if (isSortChange) {
+      // Sorting: update sort state only — useEffect will fetch page 1
       const order = sorter.order === 'ascend' ? 'asc' : 'desc';
       onSort(sorter.field, order);
+    } else {
+      // Pagination change only
+      onPageChange(paginationInfo.current, paginationInfo.pageSize);
     }
-    onPageChange(paginationInfo.current, paginationInfo.pageSize);
   };
 
   const columns = [
@@ -48,6 +59,10 @@ const LogTable = ({
       dataIndex: 'actor',
       key: 'actor',
       sorter: true,
+      sortOrder:
+        filters?.sortBy === 'actor'
+          ? filters.sortOrder === 'asc' ? 'ascend' : 'descend'
+          : null,
       width: 200,
       render: (actor) => (
         <Tooltip title={actor}>
@@ -93,6 +108,10 @@ const LogTable = ({
       dataIndex: 'action',
       key: 'action',
       sorter: true,
+      sortOrder:
+        filters?.sortBy === 'action'
+          ? filters.sortOrder === 'asc' ? 'ascend' : 'descend'
+          : null,
       width: 170,
       render: (action) => (
         <Tooltip title={action}>
@@ -146,7 +165,7 @@ const LogTable = ({
       title: 'IP Address',
       dataIndex: 'ipAddress',
       key: 'ipAddress',
-      width: 130,
+      width: 135,
       render: (ip) => (
         <Text
           style={{
@@ -164,6 +183,10 @@ const LogTable = ({
       dataIndex: 'region',
       key: 'region',
       sorter: true,
+      sortOrder:
+        filters?.sortBy === 'region'
+          ? filters.sortOrder === 'asc' ? 'ascend' : 'descend'
+          : null,
       width: 130,
       render: (region) => (
         <Text
@@ -182,6 +205,10 @@ const LogTable = ({
       dataIndex: 'severity',
       key: 'severity',
       sorter: true,
+      sortOrder:
+        filters?.sortBy === 'severity'
+          ? filters.sortOrder === 'asc' ? 'ascend' : 'descend'
+          : null,
       width: 110,
       render: (severity) => <SeverityTag severity={severity} />,
     },
@@ -189,7 +216,7 @@ const LogTable = ({
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 125,
       render: (status) => <StatusBadge status={status} />,
     },
     {
@@ -197,8 +224,11 @@ const LogTable = ({
       dataIndex: 'timestamp',
       key: 'timestamp',
       sorter: true,
-      defaultSortOrder: filters?.sortBy === 'timestamp' && filters?.sortOrder === 'asc' ? 'ascend' : 'descend',
-      width: 175,
+      sortOrder:
+        filters?.sortBy === 'timestamp'
+          ? filters.sortOrder === 'asc' ? 'ascend' : 'descend'
+          : null,
+      width: 178,
       render: (ts) => (
         <Text style={{ fontSize: 12, color: '#8b949e', whiteSpace: 'nowrap' }}>
           {formatTimestamp(ts)}
@@ -244,7 +274,7 @@ const LogTable = ({
               : `${(pagination.totalDocs || 0).toLocaleString()} total records`}
           </Text>
         </Space>
-        <Tooltip title="Refresh">
+        <Tooltip title="Refresh current page">
           <Button
             id="refresh-table-btn"
             icon={<ReloadOutlined spin={loading} />}
