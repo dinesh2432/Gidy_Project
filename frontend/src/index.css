@@ -41,7 +41,8 @@
   --unresolved-bg: rgba(239, 68, 68, 0.12);
 
   /* Layout */
-  --sidebar-width: 240px;
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 64px;
   --header-height: 64px;
   --border-radius: 8px;
   --border-radius-lg: 12px;
@@ -53,6 +54,23 @@
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
+
+  /* Responsive content padding */
+  --content-padding: 24px;
+}
+
+/* ── Responsive variable overrides ──────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --content-padding: 12px;
+    --header-height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --content-padding: 8px;
+  }
 }
 
 /* ── Reset & Base ─────────────────────────────────────────── */
@@ -74,6 +92,8 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
   min-height: 100vh;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
 }
 
 #root {
@@ -188,6 +208,17 @@ body {
   color: var(--color-text-secondary) !important;
 }
 
+/* On mobile, simplify pagination to save space */
+@media (max-width: 576px) {
+  .ant-pagination-options {
+    display: none !important;
+  }
+  .ant-pagination-jump-prev,
+  .ant-pagination-jump-next {
+    display: none !important;
+  }
+}
+
 .ant-select-selector {
   background: var(--color-bg-elevated) !important;
   border-color: var(--color-border) !important;
@@ -219,7 +250,11 @@ body {
   box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
 }
 
-/* Modals */
+/* Modals — fully responsive on all screens */
+.ant-modal {
+  max-width: calc(100vw - 16px) !important;
+}
+
 .ant-modal-content {
   background: var(--color-bg-card) !important;
   border: 1px solid var(--color-border) !important;
@@ -240,7 +275,21 @@ body {
   color: var(--color-text-secondary) !important;
 }
 
-/* Drawer */
+@media (max-width: 576px) {
+  .ant-modal {
+    margin: 8px auto !important;
+    padding: 0 8px !important;
+    top: 8px !important;
+  }
+  .ant-modal-content {
+    border-radius: var(--border-radius) !important;
+  }
+  .ant-modal-body {
+    padding: 12px !important;
+  }
+}
+
+/* Drawer — full-width on mobile */
 .ant-drawer-content {
   background: var(--color-bg-card) !important;
 }
@@ -253,10 +302,26 @@ body {
 .ant-drawer-title {
   color: var(--color-text-primary) !important;
   font-weight: 600 !important;
+  font-size: 12px !important;
+  /* Prevent very long _id strings from overflowing the header */
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 220px !important;
 }
 
 .ant-drawer-close {
   color: var(--color-text-secondary) !important;
+}
+
+@media (max-width: 576px) {
+  /* Make drawer full-width on small phones */
+  .ant-drawer-content-wrapper {
+    width: 100% !important;
+  }
+  .ant-drawer-body {
+    padding: 12px !important;
+  }
 }
 
 /* Dropdown */
@@ -282,6 +347,7 @@ body {
   border-color: var(--color-border) !important;
   color: var(--color-text-primary) !important;
   border-radius: var(--border-radius) !important;
+  width: 100% !important;
 }
 
 .ant-picker-input > input {
@@ -290,6 +356,18 @@ body {
 
 .ant-picker-suffix {
   color: var(--color-text-muted) !important;
+}
+
+/* Date picker panel — constrain on narrow screens */
+@media (max-width: 576px) {
+  .ant-picker-panel-container {
+    max-width: calc(100vw - 16px) !important;
+    overflow-x: auto !important;
+  }
+  /* Stack range picker panels vertically on mobile */
+  .ant-picker-panels {
+    flex-direction: column !important;
+  }
 }
 
 /* Buttons */
@@ -327,6 +405,13 @@ body {
 
 .ant-statistic-content {
   color: var(--color-text-primary) !important;
+}
+
+/* Shrink statistic values on small cards */
+@media (max-width: 480px) {
+  .ant-statistic-content-value {
+    font-size: 18px !important;
+  }
 }
 
 /* Menu (Sidebar) */
@@ -412,6 +497,11 @@ body {
   border-radius: var(--border-radius) !important;
 }
 
+/* Tabs */
+.ant-tabs-nav {
+  margin-bottom: 12px !important;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -460,6 +550,14 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* No hover lift on touch devices — prevents accidental state on tap */
+@media (hover: none) {
+  .stat-card:hover {
+    transform: none;
+    box-shadow: none !important;
+  }
+}
+
 .table-row-clickable {
   cursor: pointer;
 }
@@ -471,7 +569,187 @@ body {
   padding: 16px;
 }
 
+@media (max-width: 480px) {
+  .filter-section {
+    padding: 12px;
+  }
+}
+
 /* Spin override */
 .ant-spin-dot-item {
   background-color: var(--color-accent) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Sidebar — mobile overlay behaviour ─────────────────── */
+
+/*
+ * On mobile (≤ 768px) the fixed sidebar overlays the content.
+ * When collapsed it is completely off-screen (translateX(-100%))
+ * so the content can use the full viewport width.
+ * The toggle button in the header opens/closes it.
+ *
+ * Implementation: we use a CSS class `.sidebar-mobile-open` that
+ * MainLayout applies conditionally on mobile.  See MainLayout.jsx.
+ */
+
+@media (max-width: 768px) {
+  /* Sidebar slides off-screen when collapsed on mobile */
+  .ant-layout-sider {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 200 !important;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease !important;
+    /* Always show full width on mobile */
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+    flex: 0 0 220px !important;
+  }
+
+  /* Sidebar open state on mobile — toggled by JS class on parent */
+  .ant-layout-sider.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Overlay backdrop behind sidebar on mobile */
+  .sidebar-backdrop {
+    display: block !important;
+  }
+
+  /* Content always starts at left edge on mobile */
+  .ant-layout-has-sider > .ant-layout {
+    margin-left: 0 !important;
+  }
+}
+
+/* Backdrop (hidden on desktop) */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 199;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* ── Header — mobile padding & text ─────────────────────── */
+@media (max-width: 768px) {
+  .ant-layout-header {
+    padding: 0 12px !important;
+    height: var(--header-height) !important;
+    line-height: var(--header-height) !important;
+  }
+
+  /* Hide "System Status: Operational" text on very small screens */
+  .header-status-text {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-layout-header {
+    padding: 0 8px !important;
+  }
+  /* Also hide the subtitle text in header */
+  .header-subtitle {
+    display: none !important;
+  }
+}
+
+/* ── Content — reduce padding on mobile ─────────────────── */
+@media (max-width: 768px) {
+  .ant-layout-content {
+    padding: var(--content-padding) !important;
+  }
+}
+
+/* ── Table — horizontal scroll on small screens ─────────── */
+.ant-table-wrapper {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+@media (max-width: 768px) {
+  /* Reduce table cell padding to fit more on screen */
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 8px 10px !important;
+  }
+}
+
+/* ── Page header actions — wrap on mobile ───────────────── */
+@media (max-width: 576px) {
+  /* Force page action buttons to full width on small phones */
+  .page-header-actions .ant-space {
+    width: 100% !important;
+  }
+  .page-header-actions .ant-btn {
+    flex: 1 !important;
+  }
+}
+
+/* ── Dashboard / Page title — responsive font ───────────── */
+@media (max-width: 576px) {
+  h3.ant-typography {
+    font-size: 18px !important;
+  }
+  h4.ant-typography {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Upload modal — responsive width ────────────────────── */
+@media (max-width: 640px) {
+  /* AntD modal width is set inline in JSX to 620px.
+     We override it here so it fills the phone screen. */
+  .ant-modal-wrap .ant-modal {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+}
+
+/* ── Stats cards — shrink label font on mobile ──────────── */
+@media (max-width: 480px) {
+  .ant-statistic-title {
+    font-size: 10px !important;
+    letter-spacing: 0 !important;
+  }
+}
+
+/* ── Descriptions table in drawer ───────────────────────── */
+@media (max-width: 480px) {
+  .ant-descriptions-item-label {
+    width: 100px !important;
+    font-size: 11px !important;
+  }
+  .ant-descriptions-item-content {
+    font-size: 12px !important;
+  }
+}
+
+/* ── Prevent code blocks from overflowing on mobile ─────── */
+pre {
+  max-width: 100%;
+  overflow-x: auto !important;
+  white-space: pre !important;
+  word-break: normal !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Search bar — full width on all screens ─────────────── */
+.ant-input-search {
+  width: 100% !important;
+}
+
+/* ── Switch — no shrink when row wraps ──────────────────── */
+.ant-switch {
+  flex-shrink: 0 !important;
 }

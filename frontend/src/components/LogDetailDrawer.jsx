@@ -42,7 +42,7 @@ const LogDetailDrawer = ({ log, open, onClose }) => {
       }
       open={open}
       onClose={onClose}
-      width={520}
+      width={typeof window !== 'undefined' && window.innerWidth <= 576 ? '100%' : 520}
       closeIcon={<CloseOutlined style={{ color: '#8b949e' }} />}
       extra={
         <Tooltip title="Copy as JSON">

@@ -96,7 +96,7 @@ const DashboardPage = () => {
           </Text>
         </div>
 
-        <Space wrap>
+        <Space wrap className="page-header-actions">
           <Tooltip title="Refresh all data">
             <Button
               id="refresh-all-btn"

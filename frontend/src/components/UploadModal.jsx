@@ -242,7 +242,9 @@ const UploadModal = ({ open, onClose, onSuccess }) => {
       open={open}
       onCancel={handleClose}
       footer={null}
-      width={620}
+      width={typeof window !== 'undefined' && window.innerWidth <= 640
+        ? window.innerWidth - 16
+        : 620}
       destroyOnHidden
       mask={{ closable: !uploading }}
     >
